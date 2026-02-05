@@ -69,7 +69,7 @@ func (f *GamesFlow) List(ctx context.Context, params ListParams) GamesListRespon
 		req = req.PerPage(strconv.Itoa(params.PerPage))
 	}
 
-	resp, err := req.Execute()
+	resp, _, err := req.Execute()
 	if err != nil {
 		return GamesListResponse{
 			Success: false,

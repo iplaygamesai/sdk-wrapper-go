@@ -39,7 +39,7 @@ func (f *PromotionsFlow) List(ctx context.Context, status, promotionType string)
 
 // Get gets a specific promotion
 func (f *PromotionsFlow) Get(ctx context.Context, promotionID int) ApiResponse {
-	_, _, err := f.api.EndpointsAPI.GetASpecificPromotion(ctx, fmt.Sprintf("%d", promotionID)).Execute()
+	_, err := f.api.EndpointsAPI.GetASpecificPromotion(ctx, fmt.Sprintf("%d", promotionID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -69,7 +69,7 @@ func (f *PromotionsFlow) Create(ctx context.Context, data PromotionData) ApiResp
 		req.SetEndDate(data.EndDate)
 	}
 
-	_, _, err := f.api.EndpointsAPI.CreateANewPromotion(ctx).CreateANewPromotionRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.CreateANewPromotion(ctx).CreateANewPromotionRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -93,7 +93,7 @@ func (f *PromotionsFlow) Update(ctx context.Context, promotionID int, data Promo
 		req.SetIsActive(*data.IsActive)
 	}
 
-	_, _, err := f.api.EndpointsAPI.UpdateAPromotion(ctx, fmt.Sprintf("%d", promotionID)).UpdateAPromotionRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.UpdateAPromotion(ctx, fmt.Sprintf("%d", promotionID)).UpdateAPromotionRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -170,7 +170,7 @@ func (f *PromotionsFlow) ManageGames(ctx context.Context, promotionID int, gameI
 	req.SetGameIds(ids)
 	req.SetAction(action)
 
-	_, _, err := f.api.EndpointsAPI.ManageGamesForAPromotion(ctx, fmt.Sprintf("%d", promotionID)).ManageGamesForAPromotionRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.ManageGamesForAPromotion(ctx, fmt.Sprintf("%d", promotionID)).ManageGamesForAPromotionRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,

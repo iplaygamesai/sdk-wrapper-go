@@ -18,7 +18,7 @@ func NewJackpotFlow(api *apiclient.APIClient) *JackpotFlow {
 
 // GetConfiguration gets current jackpot configuration
 func (f *JackpotFlow) GetConfiguration(ctx context.Context) ApiResponse {
-	_, _, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).Execute()
+	_, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -37,7 +37,7 @@ func (f *JackpotFlow) Configure(ctx context.Context, prizeTiers []interface{}) A
 	req := apiclient.NewConfigureJackpotSettingsForTheOperatorRequest()
 	// Note: prizeTiers would need proper type mapping
 
-	_, _, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).ConfigureJackpotSettingsForTheOperatorRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).ConfigureJackpotSettingsForTheOperatorRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -53,7 +53,7 @@ func (f *JackpotFlow) Configure(ctx context.Context, prizeTiers []interface{}) A
 
 // GetPools gets all active jackpot pools
 func (f *JackpotFlow) GetPools(ctx context.Context) ApiResponse {
-	_, _, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).Execute()
+	_, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -73,7 +73,7 @@ func (f *JackpotFlow) GetPool(ctx context.Context, poolType string) ApiResponse 
 	req := apiclient.NewListOperatorsJackpotPoolsRequest()
 	req.SetPoolType(poolType)
 
-	_, _, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).ListOperatorsJackpotPoolsRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).ListOperatorsJackpotPoolsRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -100,7 +100,7 @@ func (f *JackpotFlow) GetWinners(ctx context.Context, poolID string) ApiResponse
 
 // GetGames gets games eligible for jackpot
 func (f *JackpotFlow) GetGames(ctx context.Context, poolType string) ApiResponse {
-	_, _, err := f.api.EndpointsAPI.GetGamesForAPoolTypeOrAllPoolTypes(ctx).Execute()
+	_, err := f.api.EndpointsAPI.GetGamesForAPoolTypeOrAllPoolTypes(ctx).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -120,8 +120,7 @@ func (f *JackpotFlow) GetGames(ctx context.Context, poolType string) ApiResponse
 
 // AddGames adds games to a jackpot pool
 func (f *JackpotFlow) AddGames(ctx context.Context, poolType string, gameIDs []int) ApiResponse {
-	req := apiclient.NewAddGamesToAJackpotPoolTypeRequest()
-	req.SetPoolType(poolType)
+	req := apiclient.NewAddGamesToAJackpotPoolTypeRequest(poolType)
 
 	ids := make([]int32, len(gameIDs))
 	for i, id := range gameIDs {
@@ -129,7 +128,7 @@ func (f *JackpotFlow) AddGames(ctx context.Context, poolType string, gameIDs []i
 	}
 	req.SetGameIds(ids)
 
-	_, _, err := f.api.EndpointsAPI.AddGamesToAJackpotPoolType(ctx).AddGamesToAJackpotPoolTypeRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.AddGamesToAJackpotPoolType(ctx).AddGamesToAJackpotPoolTypeRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -145,8 +144,7 @@ func (f *JackpotFlow) AddGames(ctx context.Context, poolType string, gameIDs []i
 
 // RemoveGames removes games from a jackpot pool
 func (f *JackpotFlow) RemoveGames(ctx context.Context, poolType string, gameIDs []int) ApiResponse {
-	req := apiclient.NewRemoveGamesFromAJackpotPoolTypeRequest()
-	req.SetPoolType(poolType)
+	req := apiclient.NewRemoveGamesFromAJackpotPoolTypeRequest(poolType)
 
 	ids := make([]int32, len(gameIDs))
 	for i, id := range gameIDs {
@@ -154,7 +152,7 @@ func (f *JackpotFlow) RemoveGames(ctx context.Context, poolType string, gameIDs 
 	}
 	req.SetGameIds(ids)
 
-	_, _, err := f.api.EndpointsAPI.RemoveGamesFromAJackpotPoolType(ctx).RemoveGamesFromAJackpotPoolTypeRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.RemoveGamesFromAJackpotPoolType(ctx).RemoveGamesFromAJackpotPoolTypeRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -184,7 +182,7 @@ func (f *JackpotFlow) GetContributions(ctx context.Context, filters Contribution
 		req.SetPoolType(filters.PoolType)
 	}
 
-	_, _, err := f.api.EndpointsAPI.GetPlayerContributionHistory(ctx).GetPlayerContributionHistoryRequest(*req).Execute()
+	_, err := f.api.EndpointsAPI.GetPlayerContributionHistory(ctx).GetPlayerContributionHistoryRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
