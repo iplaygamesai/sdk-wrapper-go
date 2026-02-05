@@ -29,18 +29,20 @@ type PromotionData struct {
 
 // List lists all promotions
 func (f *PromotionsFlow) List(ctx context.Context, status, promotionType string) ApiResponse {
+	// Note: There's no ListAllPromotions in the API - returning empty for now
+	// The API may need to be updated to include this endpoint
 	return ApiResponse{
 		Success: true,
 		Data: map[string]interface{}{
 			"promotions": []interface{}{},
-			"meta":       map[string]interface{}{},
+			"message":    "Promotions list endpoint not available in current API version",
 		},
 	}
 }
 
 // Get gets a specific promotion
 func (f *PromotionsFlow) Get(ctx context.Context, promotionID int) ApiResponse {
-	_, err := f.api.EndpointsAPI.GetASpecificPromotion(ctx, fmt.Sprintf("%d", promotionID)).Execute()
+	httpResp, err := f.api.EndpointsAPI.GetASpecificPromotion(ctx, fmt.Sprintf("%d", promotionID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -48,9 +50,18 @@ func (f *PromotionsFlow) Get(ctx context.Context, promotionID int) ApiResponse {
 		}
 	}
 
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"promotion_id": promotionID},
+		}
+	}
+
+	data["promotion_id"] = promotionID
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"promotion_id": promotionID},
+		Data:    data,
 	}
 }
 
@@ -64,7 +75,7 @@ func (f *PromotionsFlow) Create(ctx context.Context, data PromotionData) ApiResp
 		req.SetEndsAt(data.EndsAt)
 	}
 
-	_, err := f.api.EndpointsAPI.CreateANewPromotion(ctx).CreateANewPromotionRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.CreateANewPromotion(ctx).CreateANewPromotionRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -72,9 +83,18 @@ func (f *PromotionsFlow) Create(ctx context.Context, data PromotionData) ApiResp
 		}
 	}
 
+	respData, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || respData == nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"message": "Promotion created"},
+		}
+	}
+
+	respData["message"] = "Promotion created"
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"message": "Promotion created"},
+		Data:    respData,
 	}
 }
 
@@ -88,7 +108,7 @@ func (f *PromotionsFlow) Update(ctx context.Context, promotionID int, data Promo
 		req.SetIsActive(*data.IsActive)
 	}
 
-	_, err := f.api.EndpointsAPI.UpdateAPromotion(ctx, fmt.Sprintf("%d", promotionID)).UpdateAPromotionRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.UpdateAPromotion(ctx, fmt.Sprintf("%d", promotionID)).UpdateAPromotionRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -96,12 +116,22 @@ func (f *PromotionsFlow) Update(ctx context.Context, promotionID int, data Promo
 		}
 	}
 
+	respData, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || respData == nil {
+		return ApiResponse{
+			Success: true,
+			Data: map[string]interface{}{
+				"promotion_id": promotionID,
+				"message":      "Promotion updated",
+			},
+		}
+	}
+
+	respData["promotion_id"] = promotionID
+	respData["message"] = "Promotion updated"
 	return ApiResponse{
 		Success: true,
-		Data: map[string]interface{}{
-			"promotion_id": promotionID,
-			"message":      "Promotion updated",
-		},
+		Data:    respData,
 	}
 }
 
@@ -123,33 +153,40 @@ func (f *PromotionsFlow) Delete(ctx context.Context, promotionID int) ApiRespons
 
 // GetLeaderboard gets promotion leaderboard
 func (f *PromotionsFlow) GetLeaderboard(ctx context.Context, promotionID, limit, periodID int) ApiResponse {
+	// Note: GetPromotionLeaderboard endpoint not available in current API version
+	// This would need to be added to the API spec
 	return ApiResponse{
 		Success: true,
 		Data: map[string]interface{}{
 			"promotion_id": promotionID,
 			"leaderboard":  []interface{}{},
+			"message":      "Leaderboard endpoint not available in current API version",
 		},
 	}
 }
 
 // GetWinners gets promotion winners
 func (f *PromotionsFlow) GetWinners(ctx context.Context, promotionID int) ApiResponse {
+	// Note: GetPromotionWinners endpoint not available in current API version
 	return ApiResponse{
 		Success: true,
 		Data: map[string]interface{}{
 			"promotion_id": promotionID,
 			"winners":      []interface{}{},
+			"message":      "Winners endpoint not available in current API version",
 		},
 	}
 }
 
 // GetGames gets games eligible for a promotion
 func (f *PromotionsFlow) GetGames(ctx context.Context, promotionID int) ApiResponse {
+	// Note: GetGamesForAPromotion endpoint not available in current API version
 	return ApiResponse{
 		Success: true,
 		Data: map[string]interface{}{
 			"promotion_id": promotionID,
 			"games":        []interface{}{},
+			"message":      "Games endpoint not available in current API version",
 		},
 	}
 }
@@ -164,7 +201,7 @@ func (f *PromotionsFlow) ManageGames(ctx context.Context, promotionID int, gameI
 	}
 	req.SetGameIds(ids)
 
-	_, err := f.api.EndpointsAPI.ManageGamesForAPromotion(ctx, fmt.Sprintf("%d", promotionID)).ManageGamesForAPromotionRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.ManageGamesForAPromotion(ctx, fmt.Sprintf("%d", promotionID)).ManageGamesForAPromotionRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -172,9 +209,13 @@ func (f *PromotionsFlow) ManageGames(ctx context.Context, promotionID int, gameI
 		}
 	}
 
+	data, _ := parseResponseBody(httpResp)
+	if data == nil {
+		data = map[string]interface{}{"message": "Games updated for promotion"}
+	}
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"message": "Games updated for promotion"},
+		Data:    data,
 	}
 }
 

@@ -107,7 +107,7 @@ func (f *GamesFlow) List(ctx context.Context, params ListParams) GamesListRespon
 
 // Get retrieves a single game by ID
 func (f *GamesFlow) Get(ctx context.Context, gameID int) ApiResponse {
-	_, err := f.api.GamesAPI.GetApiV1GamesId(ctx, strconv.Itoa(gameID)).Execute()
+	httpResp, err := f.api.GamesAPI.GetApiV1GamesId(ctx, strconv.Itoa(gameID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -115,9 +115,18 @@ func (f *GamesFlow) Get(ctx context.Context, gameID int) ApiResponse {
 		}
 	}
 
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"id": gameID},
+		}
+	}
+
+	data["id"] = gameID
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"id": gameID},
+		Data:    data,
 	}
 }
 

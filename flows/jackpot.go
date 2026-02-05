@@ -18,7 +18,7 @@ func NewJackpotFlow(api *apiclient.APIClient) *JackpotFlow {
 
 // GetConfiguration gets current jackpot configuration
 func (f *JackpotFlow) GetConfiguration(ctx context.Context) ApiResponse {
-	_, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).Execute()
+	httpResp, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -26,9 +26,18 @@ func (f *JackpotFlow) GetConfiguration(ctx context.Context) ApiResponse {
 		}
 	}
 
+	// Parse response body
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"message": "Configuration retrieved"},
+		}
+	}
+
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"message": "Configuration retrieved"},
+		Data:    data,
 	}
 }
 
@@ -37,7 +46,7 @@ func (f *JackpotFlow) Configure(ctx context.Context, prizeTiers []interface{}) A
 	req := apiclient.NewConfigureJackpotSettingsForTheOperatorRequest()
 	// Note: prizeTiers would need proper type mapping
 
-	_, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).ConfigureJackpotSettingsForTheOperatorRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.ConfigureJackpotSettingsForTheOperator(ctx).ConfigureJackpotSettingsForTheOperatorRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -45,15 +54,16 @@ func (f *JackpotFlow) Configure(ctx context.Context, prizeTiers []interface{}) A
 		}
 	}
 
+	data, _ := parseResponseBody(httpResp)
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"message": "Configuration updated"},
+		Data:    data,
 	}
 }
 
 // GetPools gets all active jackpot pools
 func (f *JackpotFlow) GetPools(ctx context.Context) ApiResponse {
-	_, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).Execute()
+	httpResp, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -62,9 +72,17 @@ func (f *JackpotFlow) GetPools(ctx context.Context) ApiResponse {
 		}
 	}
 
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"pools": []interface{}{}},
+		}
+	}
+
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"pools": []interface{}{}},
+		Data:    data,
 	}
 }
 
@@ -73,7 +91,7 @@ func (f *JackpotFlow) GetPool(ctx context.Context, poolType string) ApiResponse 
 	req := apiclient.NewListOperatorsJackpotPoolsRequest()
 	req.SetPoolType(poolType)
 
-	_, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).ListOperatorsJackpotPoolsRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.ListOperatorsJackpotPools(ctx).ListOperatorsJackpotPoolsRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -81,9 +99,18 @@ func (f *JackpotFlow) GetPool(ctx context.Context, poolType string) ApiResponse 
 		}
 	}
 
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"pool_type": poolType},
+		}
+	}
+
+	data["pool_type"] = poolType
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"pool_type": poolType},
+		Data:    data,
 	}
 }
 
@@ -100,7 +127,7 @@ func (f *JackpotFlow) GetWinners(ctx context.Context, poolID string) ApiResponse
 
 // GetGames gets games eligible for jackpot
 func (f *JackpotFlow) GetGames(ctx context.Context, poolType string) ApiResponse {
-	_, err := f.api.EndpointsAPI.GetGamesForAPoolTypeOrAllPoolTypes(ctx).Execute()
+	httpResp, err := f.api.EndpointsAPI.GetGamesForAPoolTypeOrAllPoolTypes(ctx).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -109,12 +136,21 @@ func (f *JackpotFlow) GetGames(ctx context.Context, poolType string) ApiResponse
 		}
 	}
 
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data: map[string]interface{}{
+				"pool_type": poolType,
+				"games":     []interface{}{},
+			},
+		}
+	}
+
+	data["pool_type"] = poolType
 	return ApiResponse{
 		Success: true,
-		Data: map[string]interface{}{
-			"pool_type": poolType,
-			"games":     []interface{}{},
-		},
+		Data:    data,
 	}
 }
 
@@ -128,7 +164,7 @@ func (f *JackpotFlow) AddGames(ctx context.Context, poolType string, gameIDs []i
 	}
 	req.SetGameIds(ids)
 
-	_, err := f.api.EndpointsAPI.AddGamesToAJackpotPoolType(ctx).AddGamesToAJackpotPoolTypeRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.AddGamesToAJackpotPoolType(ctx).AddGamesToAJackpotPoolTypeRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -136,9 +172,13 @@ func (f *JackpotFlow) AddGames(ctx context.Context, poolType string, gameIDs []i
 		}
 	}
 
+	data, _ := parseResponseBody(httpResp)
+	if data == nil {
+		data = map[string]interface{}{"message": "Games added to jackpot pool"}
+	}
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"message": "Games added to jackpot pool"},
+		Data:    data,
 	}
 }
 
@@ -152,7 +192,7 @@ func (f *JackpotFlow) RemoveGames(ctx context.Context, poolType string, gameIDs 
 	}
 	req.SetGameIds(ids)
 
-	_, err := f.api.EndpointsAPI.RemoveGamesFromAJackpotPoolType(ctx).RemoveGamesFromAJackpotPoolTypeRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.RemoveGamesFromAJackpotPoolType(ctx).RemoveGamesFromAJackpotPoolTypeRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -160,9 +200,13 @@ func (f *JackpotFlow) RemoveGames(ctx context.Context, poolType string, gameIDs 
 		}
 	}
 
+	data, _ := parseResponseBody(httpResp)
+	if data == nil {
+		data = map[string]interface{}{"message": "Games removed from jackpot pool"}
+	}
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"message": "Games removed from jackpot pool"},
+		Data:    data,
 	}
 }
 
@@ -176,7 +220,7 @@ type ContributionFilters struct {
 func (f *JackpotFlow) GetContributions(ctx context.Context, filters ContributionFilters) ApiResponse {
 	req := apiclient.NewGetPlayerContributionHistoryRequest(filters.PlayerID)
 
-	_, err := f.api.EndpointsAPI.GetPlayerContributionHistory(ctx).GetPlayerContributionHistoryRequest(*req).Execute()
+	httpResp, err := f.api.EndpointsAPI.GetPlayerContributionHistory(ctx).GetPlayerContributionHistoryRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -185,9 +229,17 @@ func (f *JackpotFlow) GetContributions(ctx context.Context, filters Contribution
 		}
 	}
 
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"contributions": []interface{}{}},
+		}
+	}
+
 	return ApiResponse{
 		Success: true,
-		Data:    map[string]interface{}{"contributions": []interface{}{}},
+		Data:    data,
 	}
 }
 
