@@ -4,6 +4,7 @@
 package tests
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -217,4 +218,102 @@ func TestMultiSessionIframeGeneration(t *testing.T) {
 	if !strings.Contains(iframe, "allowfullscreen") {
 		t.Error("Iframe should allow fullscreen")
 	}
+}
+
+// Integration tests - require IPLAYGAMES_API_KEY and IPLAYGAMES_BASE_URL env vars
+// These tests will be skipped if the API key is not set or is the default value
+
+func skipIfNoAPIKey(t *testing.T) {
+	if apiKey == "YOUR_API_TOKEN" || apiKey == "" {
+		t.Skip("Skipping integration test: IPLAYGAMES_API_KEY not set")
+	}
+}
+
+func TestGamesListIntegration(t *testing.T) {
+	skipIfNoAPIKey(t)
+
+	client, err := iplaygames.NewClient(iplaygames.ClientOptions{
+		APIKey:  apiKey,
+		BaseURL: baseURL,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+	response := client.Games().List(ctx, flows.ListParams{
+		PerPage: 3,
+	})
+
+	if !response.Success {
+		t.Fatalf("Games list failed: %s", response.Error)
+	}
+
+	t.Logf("Found %d games (Total: %d)", len(response.Games), response.Meta.Total)
+	for _, game := range response.Games {
+		t.Logf("  - %s (%s)", game.Title, game.Producer)
+	}
+}
+
+func TestJackpotConfigurationIntegration(t *testing.T) {
+	skipIfNoAPIKey(t)
+
+	client, err := iplaygames.NewClient(iplaygames.ClientOptions{
+		APIKey:  apiKey,
+		BaseURL: baseURL,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+	response := client.Jackpot().GetConfiguration(ctx)
+
+	if !response.Success {
+		t.Fatalf("Jackpot configuration failed: %s", response.Error)
+	}
+
+	t.Logf("Jackpot configuration: %v", response.Data)
+}
+
+func TestJackpotPoolsIntegration(t *testing.T) {
+	skipIfNoAPIKey(t)
+
+	client, err := iplaygames.NewClient(iplaygames.ClientOptions{
+		APIKey:  apiKey,
+		BaseURL: baseURL,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+	response := client.Jackpot().GetPools(ctx)
+
+	if !response.Success {
+		t.Fatalf("Jackpot pools failed: %s", response.Error)
+	}
+
+	t.Logf("Jackpot pools: %v", response.Data)
+}
+
+func TestPromotionsListIntegration(t *testing.T) {
+	skipIfNoAPIKey(t)
+
+	client, err := iplaygames.NewClient(iplaygames.ClientOptions{
+		APIKey:  apiKey,
+		BaseURL: baseURL,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	ctx := context.Background()
+	response := client.Promotions().List(ctx, "", "")
+
+	if !response.Success {
+		t.Fatalf("Promotions list failed: %s", response.Error)
+	}
+
+	t.Logf("Promotions: %v", response.Data)
 }
