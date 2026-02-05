@@ -2,6 +2,7 @@ package flows
 
 import (
 	"context"
+	"strconv"
 
 	apiclient "github.com/iplaygamesai/api-client-go"
 )
@@ -27,28 +28,25 @@ type ListParams struct {
 
 // Game represents a game
 type Game struct {
-	ID            int    `json:"id"`
-	Title         string `json:"title"`
-	Producer      string `json:"producer"`
-	Type          string `json:"type"`
-	ImageURL      string `json:"image_url,omitempty"`
-	DemoAvailable bool   `json:"demo_available,omitempty"`
+	ID       int    `json:"id"`
+	Title    string `json:"title"`
+	Producer string `json:"producer"`
+	Type     string `json:"type"`
+	ImageURL string `json:"image_url,omitempty"`
+	HasDemo  bool   `json:"has_demo,omitempty"`
 }
 
 // GamesListResponse represents a games list response
 type GamesListResponse struct {
-	Success bool             `json:"success"`
-	Games   []Game           `json:"games"`
-	Meta    PaginationMeta   `json:"meta"`
-	Error   string           `json:"error,omitempty"`
+	Success bool           `json:"success"`
+	Games   []Game         `json:"games"`
+	Meta    PaginationMeta `json:"meta"`
+	Error   string         `json:"error,omitempty"`
 }
 
 // PaginationMeta contains pagination information
 type PaginationMeta struct {
-	CurrentPage int `json:"current_page"`
-	LastPage    int `json:"last_page"`
-	PerPage     int `json:"per_page"`
-	Total       int `json:"total"`
+	Total int `json:"total"`
 }
 
 // List lists available games
@@ -68,16 +66,16 @@ func (f *GamesFlow) List(ctx context.Context, params ListParams) GamesListRespon
 		req = req.Type_(params.Type)
 	}
 	if params.PerPage > 0 {
-		req = req.PerPage(params.PerPage)
+		req = req.PerPage(strconv.Itoa(params.PerPage))
 	}
 
-	resp, _, err := req.Execute()
+	resp, err := req.Execute()
 	if err != nil {
 		return GamesListResponse{
 			Success: false,
 			Error:   err.Error(),
 			Games:   []Game{},
-			Meta:    PaginationMeta{CurrentPage: 1, LastPage: 1, PerPage: 100, Total: 0},
+			Meta:    PaginationMeta{Total: 0},
 		}
 	}
 
@@ -85,26 +83,18 @@ func (f *GamesFlow) List(ctx context.Context, params ListParams) GamesListRespon
 	if resp.Data != nil {
 		for _, g := range resp.Data {
 			games = append(games, Game{
-				ID:            int(g.GetId()),
-				Title:         g.GetTitle(),
-				Producer:      g.GetProducer(),
-				Type:          g.GetType(),
-				ImageURL:      g.GetImageUrl(),
-				DemoAvailable: g.GetDemoAvailable(),
+				ID:       int(g.GetId()),
+				Title:    g.GetTitle(),
+				Producer: g.GetProducer(),
+				Type:     g.GetType(),
+				ImageURL: g.GetImageUrl(),
+				HasDemo:  g.GetHasDemo(),
 			})
 		}
 	}
 
-	meta := PaginationMeta{
-		CurrentPage: 1,
-		LastPage:    1,
-		PerPage:     100,
-		Total:       len(games),
-	}
+	meta := PaginationMeta{Total: len(games)}
 	if resp.Meta != nil {
-		meta.CurrentPage = int(resp.Meta.GetCurrentPage())
-		meta.LastPage = int(resp.Meta.GetLastPage())
-		meta.PerPage = int(resp.Meta.GetPerPage())
 		meta.Total = int(resp.Meta.GetTotal())
 	}
 
@@ -117,7 +107,7 @@ func (f *GamesFlow) List(ctx context.Context, params ListParams) GamesListRespon
 
 // Get retrieves a single game by ID
 func (f *GamesFlow) Get(ctx context.Context, gameID int) ApiResponse {
-	_, _, err := f.api.GamesAPI.GetApiV1GamesId(ctx, int32(gameID)).Execute()
+	_, err := f.api.GamesAPI.GetApiV1GamesId(ctx, strconv.Itoa(gameID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
