@@ -29,14 +29,26 @@ type PromotionData struct {
 
 // List lists all promotions
 func (f *PromotionsFlow) List(ctx context.Context, status, promotionType string) ApiResponse {
-	// Note: There's no ListAllPromotions in the API - returning empty for now
-	// The API may need to be updated to include this endpoint
+	httpResp, err := f.api.EndpointsAPI.ListPromotionsForTheOperator(ctx).Execute()
+	if err != nil {
+		return ApiResponse{
+			Success: false,
+			Error:   err.Error(),
+			Data:    map[string]interface{}{"promotions": []interface{}{}},
+		}
+	}
+
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data:    map[string]interface{}{"promotions": []interface{}{}},
+		}
+	}
+
 	return ApiResponse{
 		Success: true,
-		Data: map[string]interface{}{
-			"promotions": []interface{}{},
-			"message":    "Promotions list endpoint not available in current API version",
-		},
+		Data:    data,
 	}
 }
 
@@ -153,40 +165,107 @@ func (f *PromotionsFlow) Delete(ctx context.Context, promotionID int) ApiRespons
 
 // GetLeaderboard gets promotion leaderboard
 func (f *PromotionsFlow) GetLeaderboard(ctx context.Context, promotionID, limit, periodID int) ApiResponse {
-	// Note: GetPromotionLeaderboard endpoint not available in current API version
-	// This would need to be added to the API spec
+	httpResp, err := f.api.EndpointsAPI.GetLeaderboardForAPromotion(ctx, fmt.Sprintf("%d", promotionID)).Execute()
+	if err != nil {
+		return ApiResponse{
+			Success: false,
+			Error:   err.Error(),
+			Data: map[string]interface{}{
+				"promotion_id": promotionID,
+				"leaderboard":  []interface{}{},
+			},
+		}
+	}
+
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data: map[string]interface{}{
+				"promotion_id": promotionID,
+				"leaderboard":  []interface{}{},
+			},
+		}
+	}
+
+	data["promotion_id"] = promotionID
 	return ApiResponse{
 		Success: true,
-		Data: map[string]interface{}{
-			"promotion_id": promotionID,
-			"leaderboard":  []interface{}{},
-			"message":      "Leaderboard endpoint not available in current API version",
-		},
+		Data:    data,
 	}
 }
 
 // GetWinners gets promotion winners
 func (f *PromotionsFlow) GetWinners(ctx context.Context, promotionID int) ApiResponse {
-	// Note: GetPromotionWinners endpoint not available in current API version
+	httpResp, err := f.api.EndpointsAPI.GetWinnersForAPromotion(ctx, fmt.Sprintf("%d", promotionID)).Execute()
+	if err != nil {
+		return ApiResponse{
+			Success: false,
+			Error:   err.Error(),
+			Data: map[string]interface{}{
+				"promotion_id": promotionID,
+				"winners":      []interface{}{},
+			},
+		}
+	}
+
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data: map[string]interface{}{
+				"promotion_id": promotionID,
+				"winners":      []interface{}{},
+			},
+		}
+	}
+
+	data["promotion_id"] = promotionID
 	return ApiResponse{
 		Success: true,
-		Data: map[string]interface{}{
-			"promotion_id": promotionID,
-			"winners":      []interface{}{},
-			"message":      "Winners endpoint not available in current API version",
-		},
+		Data:    data,
 	}
 }
 
 // GetGames gets games eligible for a promotion
+// Note: There's no dedicated GET endpoint for promotion games in the API.
+// Use ManageGames to set games, or get promotion details which may include games.
 func (f *PromotionsFlow) GetGames(ctx context.Context, promotionID int) ApiResponse {
-	// Note: GetGamesForAPromotion endpoint not available in current API version
+	// Try to get games from the promotion details
+	httpResp, err := f.api.EndpointsAPI.GetASpecificPromotion(ctx, fmt.Sprintf("%d", promotionID)).Execute()
+	if err != nil {
+		return ApiResponse{
+			Success: false,
+			Error:   err.Error(),
+			Data: map[string]interface{}{
+				"promotion_id": promotionID,
+				"games":        []interface{}{},
+			},
+		}
+	}
+
+	data, parseErr := parseResponseBody(httpResp)
+	if parseErr != nil || data == nil {
+		return ApiResponse{
+			Success: true,
+			Data: map[string]interface{}{
+				"promotion_id": promotionID,
+				"games":        []interface{}{},
+			},
+		}
+	}
+
+	// Extract games if present in promotion data
+	games := []interface{}{}
+	if g, ok := data["games"]; ok {
+		games, _ = g.([]interface{})
+	}
+
 	return ApiResponse{
 		Success: true,
 		Data: map[string]interface{}{
 			"promotion_id": promotionID,
-			"games":        []interface{}{},
-			"message":      "Games endpoint not available in current API version",
+			"games":        games,
 		},
 	}
 }
