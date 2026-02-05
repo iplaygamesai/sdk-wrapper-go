@@ -7,12 +7,12 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"os"
 	"strings"
 	"testing"
 
 	iplaygames "github.com/iplaygamesai/sdk-wrapper-go"
+	"github.com/iplaygamesai/sdk-wrapper-go/flows"
 	"github.com/iplaygamesai/sdk-wrapper-go/webhooks"
 )
 
@@ -180,7 +180,7 @@ func TestJackpotWidgetEmbedCode(t *testing.T) {
 		BaseURL: baseURL,
 	})
 
-	embedCode := client.JackpotWidget().GetEmbedCode("test_token", iplaygames.flows.EmbedOptions{
+	embedCode := client.JackpotWidget().GetEmbedCode("test_token", flows.EmbedOptions{
 		Theme:     "dark",
 		Container: "my-widget",
 	})
@@ -202,7 +202,7 @@ func TestMultiSessionIframeGeneration(t *testing.T) {
 		BaseURL: baseURL,
 	})
 
-	iframe := client.MultiSession().GetIframe("https://example.com/swipe", iplaygames.flows.IframeOptions{
+	iframe := client.MultiSession().GetIframe("https://example.com/swipe", flows.IframeOptions{
 		Width:  "100%",
 		Height: "600px",
 		ID:     "game-swiper",

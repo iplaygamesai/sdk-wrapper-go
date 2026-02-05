@@ -174,13 +174,7 @@ type ContributionFilters struct {
 
 // GetContributions gets contribution history
 func (f *JackpotFlow) GetContributions(ctx context.Context, filters ContributionFilters) ApiResponse {
-	req := apiclient.NewGetPlayerContributionHistoryRequest()
-	if filters.PlayerID != "" {
-		req.SetPlayerId(filters.PlayerID)
-	}
-	if filters.PoolType != "" {
-		req.SetPoolType(filters.PoolType)
-	}
+	req := apiclient.NewGetPlayerContributionHistoryRequest(filters.PlayerID)
 
 	_, err := f.api.EndpointsAPI.GetPlayerContributionHistory(ctx).GetPlayerContributionHistoryRequest(*req).Execute()
 	if err != nil {

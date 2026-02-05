@@ -49,11 +49,7 @@ type MultiSessionResponse struct {
 
 // Start starts a multi-session for a player
 func (f *MultiSessionFlow) Start(ctx context.Context, params StartMultiSessionParams) MultiSessionResponse {
-	req := apiclient.NewStartAMultiSessionRequest()
-	req.SetPlayerId(params.PlayerID)
-	req.SetCurrency(params.Currency)
-	req.SetCountryCode(params.CountryCode)
-	req.SetIpAddress(params.IPAddress)
+	req := apiclient.NewStartAMultiSessionRequest(params.PlayerID, params.Currency, params.CountryCode, params.IPAddress)
 
 	if len(params.GameIDs) > 0 {
 		req.SetGameIds(params.GameIDs)
@@ -125,9 +121,8 @@ func (f *MultiSessionFlow) Status(ctx context.Context, token string) ApiResponse
 	if resp.Data != nil && resp.Data.Games != nil {
 		for i, g := range resp.Data.Games {
 			games = append(games, MultiSessionGame{
-				Position:  int(g.GetPosition()),
-				GameName:  g.GetGameName(),
-				GameImage: g.GetGameImage(),
+				Position: int(g.GetPosition()),
+				GameName: g.GetGameName(),
 			})
 			if games[i].Position == 0 {
 				games[i].Position = i
@@ -152,7 +147,7 @@ func (f *MultiSessionFlow) Status(ctx context.Context, token string) ApiResponse
 
 // End ends a multi-session
 func (f *MultiSessionFlow) End(ctx context.Context, token string) ApiResponse {
-	_, err := f.api.MultiSessionsAPI.EndMultiSession(ctx, token).Execute()
+	_, _, err := f.api.MultiSessionsAPI.EndMultiSession(ctx, token).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,

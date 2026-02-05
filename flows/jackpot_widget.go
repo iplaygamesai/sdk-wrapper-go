@@ -21,11 +21,7 @@ func NewJackpotWidgetFlow(api *apiclient.APIClient, baseURL string) *JackpotWidg
 
 // RegisterDomain registers a domain for widget embedding
 func (f *JackpotWidgetFlow) RegisterDomain(ctx context.Context, domain, name string) ApiResponse {
-	req := apiclient.NewRegisterANewDomainRequest()
-	req.SetDomain(domain)
-	if name != "" {
-		req.SetName(name)
-	}
+	req := apiclient.NewRegisterANewDomainRequest(domain)
 
 	resp, _, err := f.api.WidgetManagementAPI.RegisterANewDomain(ctx).RegisterANewDomainRequest(*req).Execute()
 	if err != nil {
@@ -60,7 +56,7 @@ func (f *JackpotWidgetFlow) ListDomains(ctx context.Context) ApiResponse {
 
 // GetDomain gets domain details
 func (f *JackpotWidgetFlow) GetDomain(ctx context.Context, domainID int) ApiResponse {
-	resp, _, err := f.api.WidgetManagementAPI.GetDomainDetails(ctx, fmt.Sprintf("%d", domainID)).Execute()
+	resp, _, err := f.api.WidgetManagementAPI.GetDomainDetails(ctx, int32(domainID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -75,16 +71,13 @@ func (f *JackpotWidgetFlow) GetDomain(ctx context.Context, domainID int) ApiResp
 }
 
 // UpdateDomain updates domain settings
-func (f *JackpotWidgetFlow) UpdateDomain(ctx context.Context, domainID int, name string, isActive *bool) ApiResponse {
+func (f *JackpotWidgetFlow) UpdateDomain(ctx context.Context, domainID int, isActive *bool) ApiResponse {
 	req := apiclient.NewUpdateDomainSettingsRequest()
-	if name != "" {
-		req.SetName(name)
-	}
 	if isActive != nil {
 		req.SetIsActive(*isActive)
 	}
 
-	resp, _, err := f.api.WidgetManagementAPI.UpdateDomainSettings(ctx, fmt.Sprintf("%d", domainID)).UpdateDomainSettingsRequest(*req).Execute()
+	resp, _, err := f.api.WidgetManagementAPI.UpdateDomainSettings(ctx, int32(domainID)).UpdateDomainSettingsRequest(*req).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -100,7 +93,7 @@ func (f *JackpotWidgetFlow) UpdateDomain(ctx context.Context, domainID int, name
 
 // DeleteDomain deletes a domain
 func (f *JackpotWidgetFlow) DeleteDomain(ctx context.Context, domainID int) ApiResponse {
-	_, err := f.api.WidgetManagementAPI.RemoveADomain(ctx, fmt.Sprintf("%d", domainID)).Execute()
+	_, _, err := f.api.WidgetManagementAPI.RemoveADomain(ctx, int32(domainID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -116,7 +109,7 @@ func (f *JackpotWidgetFlow) DeleteDomain(ctx context.Context, domainID int) ApiR
 
 // RegenerateDomainToken regenerates domain token
 func (f *JackpotWidgetFlow) RegenerateDomainToken(ctx context.Context, domainID int) ApiResponse {
-	resp, _, err := f.api.WidgetManagementAPI.RegenerateDomainToken(ctx, fmt.Sprintf("%d", domainID)).Execute()
+	resp, _, err := f.api.WidgetManagementAPI.RegenerateDomainToken(ctx, int32(domainID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -139,8 +132,7 @@ type CreateTokenParams struct {
 
 // CreateToken creates a widget token
 func (f *JackpotWidgetFlow) CreateToken(ctx context.Context, params CreateTokenParams) ApiResponse {
-	req := apiclient.NewGenerateAWidgetTokenRequest()
-	req.SetDomainToken(params.DomainToken)
+	req := apiclient.NewGenerateAWidgetTokenRequest(params.DomainToken)
 	if params.PlayerID != "" {
 		req.SetPlayerId(params.PlayerID)
 	}
@@ -180,7 +172,7 @@ func (f *JackpotWidgetFlow) CreatePlayerToken(ctx context.Context, domainToken, 
 func (f *JackpotWidgetFlow) ListTokens(ctx context.Context, domainID *int, active *bool) ApiResponse {
 	req := f.api.WidgetManagementAPI.ListWidgetTokens(ctx)
 	if domainID != nil {
-		req = req.DomainId(fmt.Sprintf("%d", *domainID))
+		req = req.DomainId(int32(*domainID))
 	}
 	if active != nil {
 		req = req.Active(*active)
@@ -203,7 +195,7 @@ func (f *JackpotWidgetFlow) ListTokens(ctx context.Context, domainID *int, activ
 
 // GetToken gets token details
 func (f *JackpotWidgetFlow) GetToken(ctx context.Context, tokenID int) ApiResponse {
-	resp, _, err := f.api.WidgetManagementAPI.GetTokenDetails(ctx, fmt.Sprintf("%d", tokenID)).Execute()
+	resp, _, err := f.api.WidgetManagementAPI.GetTokenDetails(ctx, int32(tokenID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -219,7 +211,7 @@ func (f *JackpotWidgetFlow) GetToken(ctx context.Context, tokenID int) ApiRespon
 
 // RevokeToken revokes a widget token
 func (f *JackpotWidgetFlow) RevokeToken(ctx context.Context, tokenID int) ApiResponse {
-	_, err := f.api.WidgetManagementAPI.RevokeAToken(ctx, fmt.Sprintf("%d", tokenID)).Execute()
+	_, _, err := f.api.WidgetManagementAPI.RevokeAToken(ctx, int32(tokenID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
@@ -235,12 +227,11 @@ func (f *JackpotWidgetFlow) RevokeToken(ctx context.Context, tokenID int) ApiRes
 
 // BulkRevokeTokens bulk revokes widget tokens
 func (f *JackpotWidgetFlow) BulkRevokeTokens(ctx context.Context, tokenIDs []int) ApiResponse {
-	req := apiclient.NewBulkRevokeTokensRequest()
-	ids := make([]int32, len(tokenIDs))
+	ids := make([]string, len(tokenIDs))
 	for i, id := range tokenIDs {
-		ids[i] = int32(id)
+		ids[i] = fmt.Sprintf("%d", id)
 	}
-	req.SetTokenIds(ids)
+	req := apiclient.NewBulkRevokeTokensRequest(ids)
 
 	resp, _, err := f.api.WidgetManagementAPI.BulkRevokeTokens(ctx).BulkRevokeTokensRequest(*req).Execute()
 	if err != nil {

@@ -20,12 +20,8 @@ func NewPromotionWidgetFlow(api *apiclient.APIClient, baseURL string) *Promotion
 }
 
 // RegisterDomain registers a domain for widget embedding
-func (f *PromotionWidgetFlow) RegisterDomain(ctx context.Context, domain, name string) ApiResponse {
-	req := apiclient.NewRegisterANewDomainRequest()
-	req.SetDomain(domain)
-	if name != "" {
-		req.SetName(name)
-	}
+func (f *PromotionWidgetFlow) RegisterDomain(ctx context.Context, domain string) ApiResponse {
+	req := apiclient.NewRegisterANewDomainRequest(domain)
 
 	resp, _, err := f.api.WidgetManagementAPI.RegisterANewDomain(ctx).RegisterANewDomainRequest(*req).Execute()
 	if err != nil {
@@ -60,8 +56,7 @@ func (f *PromotionWidgetFlow) ListDomains(ctx context.Context) ApiResponse {
 
 // CreateToken creates a widget token for promotions
 func (f *PromotionWidgetFlow) CreateToken(ctx context.Context, domainToken, playerID, currency string) ApiResponse {
-	req := apiclient.NewGenerateAWidgetTokenRequest()
-	req.SetDomainToken(domainToken)
+	req := apiclient.NewGenerateAWidgetTokenRequest(domainToken)
 	if playerID != "" {
 		req.SetPlayerId(playerID)
 	}
@@ -97,7 +92,7 @@ func (f *PromotionWidgetFlow) CreatePlayerToken(ctx context.Context, domainToken
 func (f *PromotionWidgetFlow) ListTokens(ctx context.Context, domainID *int, active *bool) ApiResponse {
 	req := f.api.WidgetManagementAPI.ListWidgetTokens(ctx)
 	if domainID != nil {
-		req = req.DomainId(fmt.Sprintf("%d", *domainID))
+		req = req.DomainId(int32(*domainID))
 	}
 	if active != nil {
 		req = req.Active(*active)
@@ -120,7 +115,7 @@ func (f *PromotionWidgetFlow) ListTokens(ctx context.Context, domainID *int, act
 
 // RevokeToken revokes a widget token
 func (f *PromotionWidgetFlow) RevokeToken(ctx context.Context, tokenID int) ApiResponse {
-	_, err := f.api.WidgetManagementAPI.RevokeAToken(ctx, fmt.Sprintf("%d", tokenID)).Execute()
+	_, _, err := f.api.WidgetManagementAPI.RevokeAToken(ctx, int32(tokenID)).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,

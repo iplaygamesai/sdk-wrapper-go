@@ -47,12 +47,7 @@ type SessionResponse struct {
 
 // Start starts a new game session
 func (f *SessionsFlow) Start(ctx context.Context, params StartSessionParams) SessionResponse {
-	req := apiclient.NewStartAGameSessionRequest()
-	req.SetGameId(int32(params.GameID))
-	req.SetPlayerId(params.PlayerID)
-	req.SetCurrency(params.Currency)
-	req.SetCountryCode(params.CountryCode)
-	req.SetIpAddress(params.IPAddress)
+	req := apiclient.NewStartAGameSessionRequest(int32(params.GameID), params.PlayerID, params.Currency, params.IPAddress, params.CountryCode)
 
 	if params.ReturnURL != "" {
 		req.SetReturnUrl(params.ReturnURL)
@@ -73,7 +68,7 @@ func (f *SessionsFlow) Start(ctx context.Context, params StartSessionParams) Ses
 		req.SetFreespinCount(int32(params.FreespinCount))
 	}
 	if params.FreespinBetAmount > 0 {
-		req.SetFreespinBetAmount(float32(params.FreespinBetAmount))
+		req.SetFreespinBetAmount(apiclient.Numeric(params.FreespinBetAmount))
 	}
 	if params.ExpireDays > 0 {
 		req.SetExpireDays(int32(params.ExpireDays))
@@ -109,12 +104,12 @@ func (f *SessionsFlow) Status(ctx context.Context, sessionID string) ApiResponse
 	return ApiResponse{
 		Success: true,
 		Data: map[string]interface{}{
-			"session_id": sessionID,
-			"status":     resp.Data.GetStatus(),
-			"player_id":  resp.Data.GetPlayerId(),
-			"game_id":    resp.Data.GetGameId(),
-			"game":       resp.Data.GetGame(),
-			"created_at": resp.Data.GetCreatedAt(),
+			"session_id":    sessionID,
+			"status":        resp.Data.GetStatus(),
+			"player_id":     resp.Data.GetPlayerId(),
+			"game":          resp.Data.GetGame(),
+			"started_at":    resp.Data.GetStartedAt(),
+			"last_activity": resp.Data.GetLastActivity(),
 		},
 		Raw: resp,
 	}
@@ -122,7 +117,7 @@ func (f *SessionsFlow) Status(ctx context.Context, sessionID string) ApiResponse
 
 // End ends a game session
 func (f *SessionsFlow) End(ctx context.Context, sessionID string) ApiResponse {
-	_, err := f.api.GameSessionsAPI.EndAGameSession(ctx, sessionID).Execute()
+	_, _, err := f.api.GameSessionsAPI.EndAGameSession(ctx, sessionID).Execute()
 	if err != nil {
 		return ApiResponse{
 			Success: false,
