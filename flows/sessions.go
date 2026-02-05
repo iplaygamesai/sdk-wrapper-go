@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iplaygamesai/api-client-go"
+	apiclient "github.com/iplaygamesai/api-client-go"
 )
 
 // SessionsFlow provides high-level operations for sessions

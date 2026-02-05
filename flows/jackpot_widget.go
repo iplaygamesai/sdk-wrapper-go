@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/iplaygamesai/api-client-go"
+	apiclient "github.com/iplaygamesai/api-client-go"
 )
 
 // JackpotWidgetFlow provides high-level operations for jackpot widgets

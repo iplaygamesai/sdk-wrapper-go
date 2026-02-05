@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/iplaygamesai/api-client-go"
+	apiclient "github.com/iplaygamesai/api-client-go"
 )
 
 // PromotionsFlow provides high-level operations for promotions

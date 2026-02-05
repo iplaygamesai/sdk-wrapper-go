@@ -2,7 +2,7 @@
 package iplaygames
 
 import (
-	"github.com/iplaygamesai/api-client-go"
+	apiclient "github.com/iplaygamesai/api-client-go"
 	"github.com/iplaygamesai/sdk-wrapper-go/flows"
 	"github.com/iplaygamesai/sdk-wrapper-go/webhooks"
 )

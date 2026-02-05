@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/iplaygamesai/api-client-go"
+	apiclient "github.com/iplaygamesai/api-client-go"
 )
 
 // MultiSessionFlow provides high-level operations for multi-sessions

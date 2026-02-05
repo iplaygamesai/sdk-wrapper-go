@@ -3,7 +3,7 @@ package flows
 import (
 	"context"
 
-	"github.com/iplaygamesai/api-client-go"
+	apiclient "github.com/iplaygamesai/api-client-go"
 )
 
 // GamesFlow provides high-level operations for games
