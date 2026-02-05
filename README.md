@@ -14,51 +14,57 @@ go get github.com/iplaygamesai/sdk-wrapper-go
 package main
 
 import (
+    "context"
     "fmt"
     "log"
 
     iplaygames "github.com/iplaygamesai/sdk-wrapper-go"
+    "github.com/iplaygamesai/sdk-wrapper-go/flows"
 )
 
 func main() {
-    client := iplaygames.NewClient(&iplaygames.ClientOptions{
+    client, err := iplaygames.NewClient(iplaygames.ClientOptions{
         APIKey:  "your-api-key",
-        BaseURL: "https://api.gamehub.com", // Configurable!
-    })
-
-    // Get games
-    games, err := client.Games().List(&iplaygames.GameListParams{
-        Currency: "USD",
+        BaseURL: "https://api.iplaygames.ai",
     })
     if err != nil {
         log.Fatal(err)
     }
-    fmt.Printf("Found %d games\n", len(games))
+
+    ctx := context.Background()
+
+    // Get games
+    gamesResp := client.Games().List(ctx, flows.ListParams{
+        Search: "bonanza",
+    })
+    if !gamesResp.Success {
+        log.Fatal(gamesResp.Error)
+    }
+    fmt.Printf("Found %d games\n", len(gamesResp.Games))
 
     // Start a game session
-    session, err := client.Sessions().Start(&iplaygames.SessionStartParams{
+    sessionResp := client.Sessions().Start(ctx, flows.StartSessionParams{
         GameID:      123,
         PlayerID:    "player_456",
         Currency:    "USD",
         CountryCode: "US",
         IPAddress:   "192.168.1.1",
     })
-    if err != nil {
-        log.Fatal(err)
+    if !sessionResp.Success {
+        log.Fatal(sessionResp.Error)
     }
 
     // Redirect player to game
-    fmt.Println("Game URL:", session.GameURL)
+    fmt.Println("Game URL:", sessionResp.GameURL)
 }
 ```
 
 ## Configuration
 
 ```go
-client := iplaygames.NewClient(&iplaygames.ClientOptions{
-    APIKey:        "your-api-key",           // Required
-    BaseURL:       "https://api.gamehub.com", // Optional, defaults to https://api.gamehub.com
-    Timeout:       30 * time.Second,          // Optional, request timeout
+client, err := iplaygames.NewClient(iplaygames.ClientOptions{
+    APIKey:        "your-api-key",            // Required
+    BaseURL:       "https://api.iplaygames.ai", // Optional
     WebhookSecret: "your-secret",             // Optional, for webhook verification
 })
 ```
@@ -68,148 +74,201 @@ client := iplaygames.NewClient(&iplaygames.ClientOptions{
 ### Games
 
 ```go
+ctx := context.Background()
+
 // List games with filters
-games, err := client.Games().List(&iplaygames.GameListParams{
-    Currency: "USD",
-    Country:  "US",
-    Category: "slots",
-    Search:   "bonanza",
+gamesResp := client.Games().List(ctx, flows.ListParams{
+    Search:     "bonanza",
+    Provider:   "pragmatic",
+    Type:       "slots",
+    PerPage:    20,
 })
+if gamesResp.Success {
+    for _, game := range gamesResp.Games {
+        fmt.Printf("Game: %s by %s\n", game.Title, game.Producer)
+    }
+}
 
 // Get single game
-game, err := client.Games().Get(123)
+gameResp := client.Games().Get(ctx, 123)
 
 // Convenience methods
-pragmaticGames, err := client.Games().ByProducer("Pragmatic Play")
-liveGames, err := client.Games().ByCategory("live")
-searchResults, err := client.Games().Search("sweet bonanza")
-playerGames, err := client.Games().ForPlayer("USD", "US")
+pragmaticGames := client.Games().ByProducer(ctx, 42, flows.ListParams{})
+liveGames := client.Games().ByCategory(ctx, "live", flows.ListParams{})
+searchResults := client.Games().Search(ctx, "sweet bonanza", flows.ListParams{})
 ```
 
 ### Sessions
 
 ```go
+ctx := context.Background()
+
 // Start a game session
-session, err := client.Sessions().Start(&iplaygames.SessionStartParams{
+sessionResp := client.Sessions().Start(ctx, flows.StartSessionParams{
     GameID:      123,
     PlayerID:    "player_456",
     Currency:    "USD",
     CountryCode: "US",
-    IPAddress:   r.RemoteAddr,
+    IPAddress:   "192.168.1.1",
     Locale:      "en",
     Device:      "mobile",
     ReturnURL:   "https://casino.com/lobby",
 })
+if sessionResp.Success {
+    fmt.Println("Game URL:", sessionResp.GameURL)
+    fmt.Println("Session ID:", sessionResp.SessionID)
+}
 
 // Get session status
-status, err := client.Sessions().Status(session.SessionID)
+statusResp := client.Sessions().Status(ctx, sessionResp.SessionID)
 
 // End session
-err = client.Sessions().End(session.SessionID)
+endResp := client.Sessions().End(ctx, sessionResp.SessionID)
 
 // Start demo session
-demo, err := client.Sessions().StartDemo(123)
+demoResp := client.Sessions().StartDemo(ctx, 123, flows.StartSessionParams{})
 ```
 
 ### Jackpot
 
 ```go
+ctx := context.Background()
+
 // Get configuration
-config, err := client.Jackpot().GetConfiguration()
+configResp := client.Jackpot().GetConfiguration(ctx)
 
 // Get all pools
-pools, err := client.Jackpot().GetPools()
+poolsResp := client.Jackpot().GetPools(ctx)
 
 // Get specific pool
-dailyPool, err := client.Jackpot().GetPool("daily")
-weeklyPool, err := client.Jackpot().GetPool("weekly")
+dailyPoolResp := client.Jackpot().GetPool(ctx, "daily")
 
 // Get winners
-winners, err := client.Jackpot().GetWinners("daily")
+winnersResp := client.Jackpot().GetWinners(ctx, "pool_123")
 
 // Manage games
-err = client.Jackpot().AddGames("daily", []int{1, 2, 3})
-err = client.Jackpot().RemoveGames("daily", []int{1})
+addResp := client.Jackpot().AddGames(ctx, "daily", []int{1, 2, 3})
+removeResp := client.Jackpot().RemoveGames(ctx, "daily", []int{1})
+
+// Get contribution history
+contribResp := client.Jackpot().GetContributions(ctx, flows.ContributionFilters{
+    PlayerID: "player_456",
+})
 ```
 
 ### Promotions
 
 ```go
+ctx := context.Background()
+
 // List promotions
-promotions, err := client.Promotions().List(&iplaygames.PromotionListParams{
-    Status: "active",
-})
+promoListResp := client.Promotions().List(ctx, "active", "")
 
 // Get promotion details
-promo, err := client.Promotions().Get(1)
+promoResp := client.Promotions().Get(ctx, 1)
+
+// Create a promotion
+createResp := client.Promotions().Create(ctx, flows.PromotionData{
+    Name:          "Summer Tournament",
+    PromotionType: "tournament",
+    CycleType:     "daily",
+    StartsAt:      "2024-06-01T00:00:00Z",
+    EndsAt:        "2024-06-30T23:59:59Z",
+})
 
 // Get leaderboard
-leaderboard, err := client.Promotions().GetLeaderboard(1)
+leaderboardResp := client.Promotions().GetLeaderboard(ctx, 1, 10, 0)
 
 // Opt-in player
-err = client.Promotions().OptIn(1, "player_456", "USD")
+optInResp := client.Promotions().OptIn(ctx, 1, "player_456", "USD")
+
+// Manage games for promotion
+manageResp := client.Promotions().ManageGames(ctx, 1, []int{1, 2, 3})
 ```
 
 ### Jackpot Widgets
 
 ```go
+ctx := context.Background()
+
 // 1. Register your domain
-domain, err := client.JackpotWidget().RegisterDomain("casino.example.com")
-domainToken := domain.DomainToken
+domainResp := client.JackpotWidget().RegisterDomain(ctx, "casino.example.com", "My Casino")
+// Get domain token from response
 
-// 2. Create anonymous token (view-only)
-token, err := client.JackpotWidget().CreateAnonymousToken(domainToken)
+// 2. List registered domains
+domainsResp := client.JackpotWidget().ListDomains(ctx)
 
-// 3. Create player token (can start game sessions)
-playerToken, err := client.JackpotWidget().CreatePlayerToken(
-    domainToken,
-    "player_456",
-    "USD",
-)
+// 3. Create anonymous token (view-only)
+anonTokenResp := client.JackpotWidget().CreateAnonymousToken(ctx, "domain_token_here")
 
-// 4. Get embed code for your frontend
-embedCode := client.JackpotWidget().GetEmbedCode(token.Token, &iplaygames.WidgetEmbedOptions{
+// 4. Create player token (can interact)
+playerTokenResp := client.JackpotWidget().CreatePlayerToken(ctx, "domain_token_here", "player_456", "USD")
+
+// 5. Get embed code for your frontend
+embedCode := client.JackpotWidget().GetEmbedCode("widget_token_here", flows.EmbedOptions{
     Theme:     "dark",
     Container: "jackpot-widget",
+    PoolTypes: []string{"daily", "weekly"},
 })
+fmt.Println(embedCode)
+// Output:
+// <div id="jackpot-widget"></div>
+// <script src="https://api.iplaygames.ai/widgets/jackpot.js"></script>
+// <script>
+//     IPlayGamesJackpotWidget.init({"container":"jackpot-widget","theme":"dark","pool_types":["daily","weekly"],"token":"widget_token_here"});
+// </script>
 ```
 
 ### Promotion Widgets
 
 ```go
-// Same flow as jackpot widgets
-domain, err := client.PromotionWidget().RegisterDomain("casino.example.com")
-token, err := client.PromotionWidget().CreatePlayerToken(
-    domain.DomainToken,
-    "player_456",
-    "USD",
-)
-embedCode := client.PromotionWidget().GetEmbedCode(token.Token, nil)
+ctx := context.Background()
+
+// Register domain
+domainResp := client.PromotionWidget().RegisterDomain(ctx, "casino.example.com")
+
+// Create player token
+tokenResp := client.PromotionWidget().CreatePlayerToken(ctx, "domain_token", "player_456", "USD")
+
+// Get embed code
+embedCode := client.PromotionWidget().GetEmbedCode("widget_token", flows.PromotionEmbedOptions{
+    Theme:        "dark",
+    Container:    "promo-widget",
+    PromotionIDs: []int{1, 2, 3},
+})
 ```
 
 ### Multi-Session (TikTok-style Game Swiping)
 
 ```go
+ctx := context.Background()
+
 // Start multi-session
-multiSession, err := client.MultiSession().Start(&iplaygames.MultiSessionStartParams{
+multiResp := client.MultiSession().Start(ctx, flows.StartMultiSessionParams{
     PlayerID:    "player_456",
     Currency:    "USD",
     CountryCode: "US",
-    IPAddress:   r.RemoteAddr,
+    IPAddress:   "192.168.1.1",
     Device:      "mobile",
+    GameIDs:     []string{"123", "456", "789"}, // Optional: specific games
 })
+if multiResp.Success {
+    fmt.Println("Swipe URL:", multiResp.SwipeURL)
+    fmt.Println("Total Games:", multiResp.TotalGames)
+}
 
 // Get iframe HTML to embed the swipe UI
-iframe := client.MultiSession().GetIframe(multiSession.SwipeURL, &iplaygames.IframeOptions{
+iframe := client.MultiSession().GetIframe(multiResp.SwipeURL, flows.IframeOptions{
     Width:  "100%",
     Height: "100vh",
+    ID:     "game-swiper",
 })
 
 // Get status
-status, err := client.MultiSession().Status(multiSession.MultiSessionID)
+statusResp := client.MultiSession().Status(ctx, multiResp.MultiSessionID)
 
 // End when player leaves
-err = client.MultiSession().End(multiSession.MultiSessionID)
+endResp := client.MultiSession().End(ctx, multiResp.MultiSessionID)
 ```
 
 ## Handling Webhooks
@@ -245,10 +304,14 @@ import (
 var client *iplaygames.Client
 
 func init() {
-    client = iplaygames.NewClient(&iplaygames.ClientOptions{
+    var err error
+    client, err = iplaygames.NewClient(iplaygames.ClientOptions{
         APIKey:        os.Getenv("GAMEHUB_API_KEY"),
         WebhookSecret: os.Getenv("GAMEHUB_WEBHOOK_SECRET"),
     })
+    if err != nil {
+        panic(err)
+    }
 }
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -259,7 +322,11 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     signature := r.Header.Get("X-Signature")
-    handler := client.Webhooks()
+    handler, err := client.Webhooks()
+    if err != nil {
+        http.Error(w, "Webhook handler not configured", http.StatusInternalServerError)
+        return
+    }
 
     // Verify signature
     if !handler.Verify(string(body), signature) {
@@ -280,17 +347,17 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
     switch webhook.Type {
     case webhooks.TypeAuthenticate:
-        response = handleAuthenticate(webhook)
+        response = handleAuthenticate(handler, webhook)
     case webhooks.TypeBalanceCheck:
-        response = handleBalanceCheck(webhook)
+        response = handleBalanceCheck(handler, webhook)
     case webhooks.TypeBet:
-        response = handleBet(webhook)
+        response = handleBet(handler, webhook)
     case webhooks.TypeWin:
-        response = handleWin(webhook)
+        response = handleWin(handler, webhook)
     case webhooks.TypeRollback:
-        response = handleRollback(webhook)
+        response = handleRollback(handler, webhook)
     case webhooks.TypeReward:
-        response = handleReward(webhook)
+        response = handleReward(handler, webhook)
     default:
         http.Error(w, "Unknown webhook type", http.StatusBadRequest)
         return
@@ -300,46 +367,40 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-func handleAuthenticate(webhook *webhooks.Payload) interface{} {
+func handleAuthenticate(handler *webhooks.Handler, webhook *webhooks.Payload) interface{} {
     player, err := findPlayer(webhook.PlayerID)
     if err != nil {
-        return client.Webhooks().PlayerNotFoundResponse()
+        return handler.PlayerNotFoundResponse()
     }
 
     balance := player.GetBalance(webhook.Currency)
-
-    return client.Webhooks().SuccessResponse(balance, map[string]interface{}{
+    return handler.SuccessResponse(balance, map[string]interface{}{
         "player_name": player.Name,
     })
 }
 
-func handleBet(webhook *webhooks.Payload) interface{} {
+func handleBet(handler *webhooks.Handler, webhook *webhooks.Payload) interface{} {
     player, _ := findPlayer(webhook.PlayerID)
     balance := player.GetBalance(webhook.Currency)
     betAmount := webhook.GetAmountInDollars()
 
     // Check funds
-    if balance < betAmount {
-        return client.Webhooks().InsufficientFundsResponse(balance)
+    if betAmount != nil && balance < *betAmount {
+        return handler.InsufficientFundsResponse(balance)
     }
 
     // Check idempotency
-    if transactionExists(webhook.TransactionID) {
-        return client.Webhooks().AlreadyProcessedResponse(balance)
+    if webhook.TransactionID != nil && transactionExists(*webhook.TransactionID) {
+        return handler.AlreadyProcessedResponse(balance)
     }
 
     // Process bet
-    player.Debit(betAmount, webhook.Currency)
-    createTransaction(&Transaction{
-        ExternalID: webhook.TransactionID,
-        PlayerID:   webhook.PlayerID,
-        Type:       "bet",
-        Amount:     betAmount,
-        Currency:   webhook.Currency,
-    })
+    if betAmount != nil {
+        player.Debit(*betAmount, webhook.Currency)
+    }
 
     newBalance := player.GetBalance(webhook.Currency)
-    return client.Webhooks().SuccessResponse(newBalance, nil)
+    return handler.SuccessResponse(newBalance, nil)
 }
 
 // ... implement other handlers similarly
@@ -366,9 +427,9 @@ webhook.Timestamp   // ISO 8601 timestamp
 ### Transaction Fields (bet, win, rollback, reward)
 
 ```go
-webhook.TransactionID             // Unique transaction ID
-webhook.Amount                    // Amount in cents
-webhook.GetAmountInDollars()      // Amount in dollars
+webhook.TransactionID             // Unique transaction ID (nullable)
+webhook.Amount                    // Amount in cents (nullable)
+webhook.GetAmountInDollars()      // Amount in dollars (nullable)
 webhook.SessionID                 // Game session ID
 webhook.RoundID                   // Game round ID
 ```
@@ -384,30 +445,32 @@ webhook.FreespinRoundNumber     // Current spin number
 webhook.FreespinTotalWinnings   // Cumulative winnings
 ```
 
-## Error Handling
+## Response Pattern
+
+All flow methods return response structs with a consistent pattern:
 
 ```go
-session, err := client.Sessions().Start(params)
-if err != nil {
-    if apiErr, ok := err.(*iplaygames.APIError); ok {
-        fmt.Printf("API Error: %d - %s\n", apiErr.Status, apiErr.Message)
-        fmt.Printf("Details: %v\n", apiErr.Data)
-    } else {
-        fmt.Printf("Unexpected error: %v\n", err)
-    }
+// Check success
+resp := client.Games().List(ctx, params)
+if !resp.Success {
+    fmt.Println("Error:", resp.Error)
     return
+}
+
+// Use the data
+for _, game := range resp.Games {
+    fmt.Println(game.Title)
 }
 ```
 
-## Context Support
-
-All methods accept a context for cancellation and timeouts:
+For generic responses using `ApiResponse`:
 
 ```go
-ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-defer cancel()
-
-games, err := client.Games().ListWithContext(ctx, params)
+resp := client.Jackpot().GetPools(ctx)
+if resp.Success {
+    pools := resp.Data["pools"]
+    fmt.Println(pools)
+}
 ```
 
 ## Running Tests
